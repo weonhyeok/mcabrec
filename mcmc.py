@@ -140,7 +140,7 @@ def generate_answers(users_df):
     return answers
 
 
-def generate_cafe_payments(users_df, ab_tests_df, month_index):
+def generate_payments(users_df, ab_tests_df, month_index):
     """결제 데이터 생성 (재구매 포함)"""
     payments = []
     user_purchase_history = {}  # {user_id: [month_indices]}
@@ -224,7 +224,7 @@ def run_single_simulation():
     users_df = pd.DataFrame(all_users)
     ab_tests_df = pd.DataFrame(generate_ab_tests(users_df))
     answers_df = pd.DataFrame(generate_answers(users_df))
-    payments_df = pd.DataFrame(generate_cafe_payments(users_df, ab_tests_df, 0))
+    payments_df = pd.DataFrame(generate_payments(users_df, ab_tests_df, 0))
 
     # 결과 계산
     merged_payments = payments_df.merge(ab_tests_df, on='user_id')
@@ -283,9 +283,9 @@ def save_data_to_gdrive(users_df, ab_tests_df, answers_df, payments_df):
     answers_df.to_csv(f'{base_path}/answers.csv', index=False, encoding='utf-8-sig')
     print(f"✓ answers.csv 저장 완료 ({len(answers_df)} rows)")
 
-    # cafe_payments 테이블 저장
-    payments_df.to_csv(f'{base_path}/cafe_payments.csv', index=False, encoding='utf-8-sig')
-    print(f"✓ cafe_payments.csv 저장 완료 ({len(payments_df)} rows)")
+    # payments 테이블 저장
+    payments_df.to_csv(f'{base_path}/payments.csv', index=False, encoding='utf-8-sig')
+    print(f"✓ payments.csv 저장 완료 ({len(payments_df)} rows)")
 
     print("\n모든 데이터가 성공적으로 저장되었습니다!")
     print(f"저장 경로: {base_path}")
@@ -314,7 +314,7 @@ print(f"  Type 21: {len(ab_tests_sample[ab_tests_sample['type']==21])} users")
 print(f"\n- Answers 테이블: {len(answers_sample)} rows")
 print(answers_sample.head())
 
-print(f"\n- Cafe Payments 테이블: {len(payments_sample)} rows")
+print(f"\n- Payments 테이블: {len(payments_sample)} rows")
 print(payments_sample.head())
 print(f"\n  Order name 분포:")
 merged_payments_sample = payments_sample.merge(ab_tests_sample, on='user_id')

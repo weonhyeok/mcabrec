@@ -1,10 +1,10 @@
-# A/B Test Simulator for Dating App
+# A/B Test Simulator for AI App
 
-데이팅 앱의 멤버십 전환율 A/B 테스트를 위한 Monte Carlo 시뮬레이션 도구입니다.
+AI 앱의 멤버십 전환율 A/B 테스트를 위한 Monte Carlo 시뮬레이션 도구입니다.
 
 ## 📋 프로젝트 개요
 
-이 프로젝트는 데이팅 앱에서 멤버십 상품 구성 변경이 매출에 미치는 영향을 분석하기 위한 A/B 테스트 시뮬레이터입니다. Monte Carlo 시뮬레이션을 통해 통계적으로 유의미한 결과를 도출합니다.
+이 프로젝트는 AI 앱에서 멤버십 상품 구성 변경이 매출에 미치는 영향을 분석하기 위한 A/B 테스트 시뮬레이터입니다. Monte Carlo 시뮬레이션을 통해 통계적으로 유의미한 결과를 도출합니다.
 
 ### 주요 기능
 
@@ -55,7 +55,7 @@ gdrive/My Drive/DataScience/ABT/dataRaw/
 ├── users.csv              # 사용자 정보
 ├── ab_tests.csv           # A/B 테스트 배정
 ├── answers.csv            # 설문 응답 데이터
-├── cafe_payments.csv      # 결제 데이터
+├── payments.csv      # 결제 데이터
 ├── monte_carlo_results.csv            # 시뮬레이션 결과
 └── monte_carlo_visualization.png      # 시각화 결과
 ```
@@ -126,7 +126,7 @@ Type 20이 더 높을 확률: 99.8%
 | user_id | string | 사용자 ID |
 | answer | int | 응답 값 (1/2) |
 
-### cafe_payments.csv
+### payments.csv
 | 컬럼 | 타입 | 설명 |
 |------|------|------|
 | created | datetime | 결제 시간 |
@@ -156,13 +156,9 @@ MEMBERSHIP_DIST_TYPE21 = {
 REPURCHASE_RATE = 0.50
 ```
 
-## 📝 라이선스
-
-MIT License
-
 ## 👤 작성자
 
-Weonhyeok - Korea Institute for International Economic Policy (KIEP)
+Marvin
 
 ## 🙏 기여
 
