@@ -1,0 +1,173 @@
+# A/B Test Simulator for Dating App
+
+데이팅 앱의 멤버십 전환율 A/B 테스트를 위한 Monte Carlo 시뮬레이션 도구입니다.
+
+## 📋 프로젝트 개요
+
+이 프로젝트는 데이팅 앱에서 멤버십 상품 구성 변경이 매출에 미치는 영향을 분석하기 위한 A/B 테스트 시뮬레이터입니다. Monte Carlo 시뮬레이션을 통해 통계적으로 유의미한 결과를 도출합니다.
+
+### 주요 기능
+
+- 📊 사용자 행동 데이터 시뮬레이션 (가입, 설문 응답, 결제)
+- 🔬 A/B 테스트 그룹 자동 배정
+- 💰 멤버십 전환율 및 매출 분석
+- 📈 Monte Carlo 시뮬레이션 (1,000회 반복)
+- 📁 CSV 형태의 테스트 데이터 생성
+
+## 🎯 A/B 테스트 설계
+
+### 대조군 (Type 20)
+- 일주일 멤버십 비중: 60%
+- 한달 멤버십 비중: 40%
+- 전환율: 30%
+- AI 추천권 추가 판매 (일주일 멤버십 구매자의 70%)
+
+### 실험군 (Type 21)
+- 일주일 멤버십 비중: 20%
+- 한달 멤버십 비중: 80%
+- 전환율: 20%
+- AI 추천권 없음
+
+## 📊 측정 지표
+
+- **전환율 (Conversion Rate)**: 가입 유저 중 결제 유저 비율
+- **ARPU (Average Revenue Per User)**: 유저당 평균 매출
+- **ARPPU (Average Revenue Per Paying User)**: 결제 유저당 평균 매출
+- **총 매출 (Total Revenue)**: 그룹별 총 매출
+
+## 🚀 시작하기
+
+### 필요 라이브러리
+```bash
+pip install pandas numpy matplotlib
+```
+
+### 실행 방법
+```bash
+python ab_test_simulation_monte_carlo.py
+```
+
+### 출력 데이터
+
+스크립트 실행 시 다음 파일들이 생성됩니다:
+```
+gdrive/My Drive/DataScience/ABT/dataRaw/
+├── users.csv              # 사용자 정보
+├── ab_tests.csv           # A/B 테스트 배정
+├── answers.csv            # 설문 응답 데이터
+├── cafe_payments.csv      # 결제 데이터
+├── monte_carlo_results.csv            # 시뮬레이션 결과
+└── monte_carlo_visualization.png      # 시각화 결과
+```
+
+## 📈 시뮬레이션 파라미터
+
+### 사용자 설정
+- 총 사용자 수: 900명 (6개월간)
+- 남성 비율: 66.7% (평균 출생년도: 1995년)
+- 여성 비율: 33.3% (평균 출생년도: 1998년)
+
+### 가격 정책
+- AI 추천권: 5,000원
+- 일주일 멤버십: 20,000원
+- 한달 멤버십: 50,000원
+
+### 재구매율
+- 월별 재구매율: 50%
+
+## 📊 결과 예시
+```
+[평균 매출]
+Type 20 (대조군): 14,500,000원
+Type 21 (실험군): 12,800,000원
+매출 차이: 1,700,000원
+
+[평균 전환율]
+Type 20 (대조군): 30.2%
+Type 21 (실험군): 20.1%
+
+[평균 ARPPU]
+Type 20 (대조군): 107,500원
+Type 21 (실험군): 142,000원
+
+[95% 신뢰구간 - 매출 차이]
+95% CI: [1,200,000원, 2,200,000원]
+Type 20이 더 높을 확률: 99.8%
+```
+
+## 🔍 주요 발견
+
+1. **전환율 트레이드오프**: Type 21은 전환율이 낮지만 ARPPU가 높음
+2. **총 매출**: Type 20이 통계적으로 유의미하게 높은 매출 생성
+3. **재구매 패턴**: 재구매율 50% 가정 시 6개월간의 누적 효과 분석
+
+## 📁 데이터 스키마
+
+### users.csv
+| 컬럼 | 타입 | 설명 |
+|------|------|------|
+| timestamp | datetime | 가입 시간 |
+| id | string | 사용자 ID |
+| gender | string | 성별 (M/F) |
+| birth | int | 출생년도 |
+
+### ab_tests.csv
+| 컬럼 | 타입 | 설명 |
+|------|------|------|
+| timestamp | datetime | 배정 시간 |
+| user_id | string | 사용자 ID |
+| type | int | A/B 테스트 타입 (20/21) |
+
+### answers.csv
+| 컬럼 | 타입 | 설명 |
+|------|------|------|
+| created | datetime | 응답 시간 |
+| answer_id | int | 질문 번호 (1-5) |
+| user_id | string | 사용자 ID |
+| answer | int | 응답 값 (1/2) |
+
+### cafe_payments.csv
+| 컬럼 | 타입 | 설명 |
+|------|------|------|
+| created | datetime | 결제 시간 |
+| user_id | string | 사용자 ID |
+| order_name | string | 상품명 |
+| amount | int | 결제 금액 |
+| cancel | int | 취소 여부 (0/1) |
+
+## 🛠️ 커스터마이징
+
+시뮬레이션 파라미터는 스크립트 상단에서 수정 가능합니다:
+```python
+# 시뮬레이션 횟수
+N_SIMULATIONS = 1000
+
+# 전환율 설정
+CONVERSION_RATE_TYPE20 = 0.30
+CONVERSION_RATE_TYPE21 = 0.20
+
+# 멤버십 분포
+MEMBERSHIP_DIST_TYPE21 = {
+    'weekly': 0.20,
+    'monthly': 0.80
+}
+
+# 재구매율
+REPURCHASE_RATE = 0.50
+```
+
+## 📝 라이선스
+
+MIT License
+
+## 👤 작성자
+
+Weonhyeok - Korea Institute for International Economic Policy (KIEP)
+
+## 🙏 기여
+
+이슈나 풀 리퀘스트는 언제나 환영합니다!
+
+---
+
+**Note**: 이 시뮬레이터는 교육 및 분석 목적으로 제작되었습니다.
