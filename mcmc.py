@@ -19,7 +19,8 @@ EARLY_MONTHS = ['2025-05', '2025-06', '2025-07']
 LATE_MONTHS = ['2025-08', '2025-09', '2025-10']
 
 # 유저 설정
-TOTAL_USERS = 900
+TOTAL_USERS = 1700
+USERS_PER_MONTH = [300, 600, 200, 200, 200, 200]  # 5월, 6월, 7월, 8월, 9월, 10월
 MALE_RATIO = 600 / 900
 MALE_BIRTH_MEAN = 1995
 MALE_BIRTH_STD = 3
@@ -95,17 +96,22 @@ def generate_users(month, n_users_per_month):
 
 
 def generate_ab_tests(users_df):
-    """AB 테스트 배정"""
+    """AB 테스트 배정 - 6월 가입자만 AB 테스트에 포함"""
     ab_tests = []
 
     for _, user in users_df.iterrows():
-        ab_type = 20 if random.random() < 0.5 else 21
-
-        ab_tests.append({
-            'timestamp': user['timestamp'],
-            'user_id': user['id'],
-            'type': ab_type
-        })
+        signup_month = user['signup_month']
+        
+        # 6월 가입자만 AB 테스트에 포함 (랜덤화)
+        if signup_month == '2025-06':
+            ab_type = 20 if random.random() < 0.5 else 21
+            
+            ab_tests.append({
+                'timestamp': user['timestamp'],
+                'user_id': user['id'],
+                'type': ab_type
+            })
+        # 다른 월 가입자는 ab_tests 테이블에 포함하지 않음
 
     return ab_tests
 
@@ -142,16 +148,30 @@ def generate_answers(users_df):
 
 
 def generate_payments(users_df, ab_tests_df, month_index):
-    """결제 데이터 생성 (재구매 포함)"""
+    """결제 데이터 생성 (재구매 포함)
+    - 6월 가입자: ab_tests_df의 type에 따라 파라미터 적용
+    - 비6월 가입자: type 20 파라미터 적용 (하지만 ab_tests에는 미포함)
+    """
     payments = []
     user_purchase_history = {}
     
-    merged_df = users_df.merge(ab_tests_df, left_on='id', right_on='user_id')
+    # 6월 가입자의 AB 테스트 타입 매핑
+    ab_type_map = dict(zip(ab_tests_df['user_id'], ab_tests_df['type']))
     
-    for _, user in merged_df.iterrows():
+    for _, user in users_df.iterrows():
         user_id = user['id']
-        ab_type = user['type']
-        signup_month_idx = MONTHS.index(user['signup_month'])
+        signup_month = user['signup_month']
+        signup_month_idx = MONTHS.index(signup_month)
+        
+        # 6월 가입자는 ab_tests의 type 사용, 아니면 type 20 파라미터 사용
+        is_june_user = signup_month == '2025-06'
+        if is_june_user:
+            ab_type = ab_type_map.get(user_id)
+            if ab_type is None:  # 혹시 모를 경우 대비
+                continue
+        else:
+            # 비6월 가입자는 type 20 파라미터 사용 (하지만 분석에서는 제외됨)
+            ab_type = 20
         
         # Type별 재구매율 설정
         repurchase_rate = REPURCHASE_RATE_TYPE20 if ab_type == 20 else REPURCHASE_RATE_TYPE21
@@ -214,20 +234,20 @@ def generate_payments(users_df, ab_tests_df, month_index):
 
 def run_single_simulation():
     """단일 시뮬레이션 실행"""
-    # 월별 유저 수 배분
-    users_per_month = TOTAL_USERS // len(MONTHS)
-
     all_users = []
-    for month in MONTHS:
-        all_users.extend(generate_users(month, users_per_month))
+    for month_idx, month in enumerate(MONTHS):
+        all_users.extend(generate_users(month, USERS_PER_MONTH[month_idx]))
 
     users_df = pd.DataFrame(all_users)
     ab_tests_df = pd.DataFrame(generate_ab_tests(users_df))
     answers_df = pd.DataFrame(generate_answers(users_df))
     payments_df = pd.DataFrame(generate_payments(users_df, ab_tests_df, 0))
 
-    # 결과 계산
-    merged_payments = payments_df.merge(ab_tests_df, on='user_id')
+    # 결과 계산 - 6월 가입자만 (ab_tests에 포함된 유저만)
+    # ab_tests에 있는 user_id만 필터링
+    june_user_ids = set(ab_tests_df['user_id'])
+    june_payments = payments_df[payments_df['user_id'].isin(june_user_ids)]
+    merged_payments = june_payments.merge(ab_tests_df, on='user_id')
 
     results = {
         'total_revenue_type20': merged_payments[merged_payments['type'] == 20]['amount'].sum(),
@@ -275,9 +295,9 @@ def save_data_to_gdrive(users_df, ab_tests_df, answers_df, payments_df):
     users_save.to_csv(f'{base_path}/users.csv', index=False, encoding='utf-8-sig')
     print(f"✓ users.csv 저장 완료 ({len(users_save)} rows)")
 
-    # ab_tests 테이블 저장
+    # ab_tests 테이블 저장 (6월 가입자만 포함)
     ab_tests_df.to_csv(f'{base_path}/ab_tests.csv', index=False, encoding='utf-8-sig')
-    print(f"✓ ab_tests.csv 저장 완료 ({len(ab_tests_df)} rows)")
+    print(f"✓ ab_tests.csv 저장 완료 ({len(ab_tests_df)} rows) - 6월 가입자만")
 
     # answers 테이블 저장
     answers_df.to_csv(f'{base_path}/answers.csv', index=False, encoding='utf-8-sig')
@@ -309,18 +329,32 @@ print("\n[샘플 데이터 확인]")
 print(f"\n- Users 테이블: {len(users_sample)} rows")
 print(users_sample.head())
 
-print(f"\n- AB Tests 테이블: {len(ab_tests_sample)} rows")
+print(f"\n- 월별 유저 수 분포:")
+print(users_sample.groupby('signup_month').size())
+
+print(f"\n- AB Tests 테이블: {len(ab_tests_sample)} rows (6월 가입자만)")
 print(ab_tests_sample.head())
 print(f"  Type 20: {len(ab_tests_sample[ab_tests_sample['type']==20])} users")
 print(f"  Type 21: {len(ab_tests_sample[ab_tests_sample['type']==21])} users")
 
+# 월별 AB 테스트 분포 확인 (6월만 있어야 함)
+print(f"\n- 월별 AB 테스트 분포 (6월만 있어야 함):")
+merged_ab = ab_tests_sample.merge(users_sample[['id', 'signup_month']], left_on='user_id', right_on='id')
+print(merged_ab.groupby(['signup_month', 'type']).size().unstack(fill_value=0))
+
 print(f"\n- Answers 테이블: {len(answers_sample)} rows")
 print(answers_sample.head())
 
-print(f"\n- Payments 테이블: {len(payments_sample)} rows")
+print(f"\n- Payments 테이블: {len(payments_sample)} rows (전체 유저 포함)")
 print(payments_sample.head())
-print(f"\n  Order name 분포:")
-merged_payments_sample = payments_sample.merge(ab_tests_sample, on='user_id')
+
+# 6월 가입자만 필터링해서 order name 분포 확인
+june_user_ids = set(ab_tests_sample['user_id'])
+june_payments_sample = payments_sample[payments_sample['user_id'].isin(june_user_ids)]
+merged_payments_sample = june_payments_sample.merge(ab_tests_sample, on='user_id')
+
+print(f"\n- 6월 가입자 Payments: {len(june_payments_sample)} rows")
+print(f"\n  Order name 분포 (6월 가입자만):")
 print("\nType 20:")
 print(merged_payments_sample[merged_payments_sample['type']==20]['order_name'].value_counts())
 print("\nType 21:")
@@ -337,7 +371,7 @@ mc_results = run_monte_carlo_simulation(N_SIMULATIONS)
 
 # 결과 분석
 print("\n" + "=" * 60)
-print("Monte Carlo Simulation 결과")
+print("Monte Carlo Simulation 결과 (6월 가입자만)")
 print("=" * 60)
 
 # 평균 매출
@@ -396,7 +430,7 @@ plt.hist(mc_results['total_revenue_type20'], bins=50, alpha=0.5, label='Type 20'
 plt.hist(mc_results['total_revenue_type21'], bins=50, alpha=0.5, label='Type 21')
 plt.xlabel('Total Revenue')
 plt.ylabel('Frequency')
-plt.title('Revenue Distribution')
+plt.title('Revenue Distribution (June Cohort)')
 plt.legend()
 
 # 2. 매출 차이 분포
@@ -456,7 +490,7 @@ plt.close()
 # ============================================================================
 
 print("\n" + "=" * 60)
-print("통계적 유의성 검정 (t-test)")
+print("통계적 유의성 검정 (t-test) - 6월 가입자만")
 print("=" * 60)
 
 # 1. CVR 차이 검정
@@ -525,7 +559,7 @@ print(f"{'ARPPU (Type 21>20)':<20} {(arppu_diff.mean() > 0):<20} {p_value_arppu:
 # ============================================================================
 
 print("\n" + "="*70)
-print("Bayesian Analysis: Revenue Difference (Monte Carlo Based)")
+print("Bayesian Analysis: Revenue Difference (6월 가입자만)")
 print("="*70)
 
 # Monte Carlo 시뮬레이션 결과를 베이지안 사후 분포로 사용
@@ -652,7 +686,7 @@ axes[0, 0].axvline(revenue_type20.mean(), color='blue', linestyle='--', linewidt
 axes[0, 0].axvline(revenue_type21.mean(), color='orange', linestyle='--', linewidth=2)
 axes[0, 0].set_xlabel('Total Revenue (KRW)')
 axes[0, 0].set_ylabel('Probability Density')
-axes[0, 0].set_title('Posterior Distribution: Total Revenue')
+axes[0, 0].set_title('Posterior Distribution: Total Revenue\n(June Cohort Only)')
 axes[0, 0].legend()
 axes[0, 0].grid(alpha=0.3)
 
@@ -736,7 +770,7 @@ plt.close()
 # ============================================================================
 
 print("\n" + "="*70)
-print("Decision Summary: Frequentist vs Bayesian")
+print("Decision Summary: Frequentist vs Bayesian (6월 가입자만)")
 print("="*70)
 
 print(f"""
