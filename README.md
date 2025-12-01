@@ -13,6 +13,7 @@ AI 앱의 멤버십 전환율 A/B 테스트를 위한 Monte Carlo 시뮬레이�
 - 💰 멤버십 전환율 및 매출 분석
 - 📈 Monte Carlo 시뮬레이션 (1,000회 반복)
 - 📁 CSV 형태의 테스트 데이터 생성
+- ✅ 데이터 검증 스크립트 포함
 
 ## 🎯 A/B 테스트 설계
 
@@ -30,10 +31,11 @@ AI 앱의 멤버십 전환율 A/B 테스트를 위한 Monte Carlo 시뮬레이�
 
 ## 📊 측정 지표
 
-- **전환율 (Conversion Rate)**: 가입 유저 중 결제 유저 비율
+- **CVR (Conversion Rate)**: 가입 유저 중 결제 유저 비율
 - **ARPU (Average Revenue Per User)**: 유저당 평균 매출
 - **ARPPU (Average Revenue Per Paying User)**: 결제 유저당 평균 매출
 - **총 매출 (Total Revenue)**: 그룹별 총 매출
+- **총 주문 (Total Orders)**: 그룹별 총 주문 건수
 
 ## 🚀 시작하기
 
@@ -44,7 +46,11 @@ pip install pandas numpy matplotlib
 
 ### 실행 방법
 ```bash
+# 시뮬레이션 실행
 python ab_test_simulation_monte_carlo.py
+
+# 데이터 검증
+python check.py
 ```
 
 ### 출력 데이터
@@ -52,10 +58,10 @@ python ab_test_simulation_monte_carlo.py
 스크립트 실행 시 다음 파일들이 생성됩니다:
 ```
 gdrive/My Drive/DataScience/ABT/dataRaw/
-├── users.csv              # 사용자 정보
-├── ab_tests.csv           # A/B 테스트 배정
-├── answers.csv            # 설문 응답 데이터
-├── payments.csv      # 결제 데이터
+├── users.csv                          # 사용자 정보
+├── ab_tests.csv                       # A/B 테스트 배정
+├── answers.csv                        # 설문 응답 데이터
+├── payments.csv                       # 결제 데이터
 ├── monte_carlo_results.csv            # 시뮬레이션 결과
 └── monte_carlo_visualization.png      # 시각화 결과
 ```
@@ -75,7 +81,44 @@ gdrive/My Drive/DataScience/ABT/dataRaw/
 ### 재구매율
 - 월별 재구매율: 50%
 
-## 📊 결과 예시
+## 📊 시뮬레이션 결과 예시
+
+### 실제 시뮬레이션 데이터 (단일 실행)
+```
+[Type 20 - 대조군]
+  총 유저: 451명
+  결제 유저: 142명
+  CVR: 31.49%
+  총 매출: 12,955,000원
+  ARPU: 28,725원
+  ARPPU: 91,232원
+  총 주문: 353건
+  
+  주문 타입별:
+    - AI 추천권: 121건
+    - 일주일 멤버십: 155건
+    - 한달 멤버십: 77건
+
+[Type 21 - 실험군]
+  총 유저: 449명
+  결제 유저: 93명
+  CVR: 20.71%
+  총 매출: 10,190,000원
+  ARPU: 22,695원
+  ARPPU: 109,570원
+  총 주문: 132건
+  
+  주문 타입별:
+    - 일주일 멤버십: 43건
+    - 한달 멤버십: 89건
+
+[주요 차이]
+  매출 차이: 2,765,000원 (Type 20 > Type 21)
+  CVR 차이: 10.78%p (Type 20 > Type 21)
+  ARPPU 차이: 18,338원 (Type 21 > Type 20)
+```
+
+### Monte Carlo 시뮬레이션 평균 결과 (1,000회)
 ```
 [평균 매출]
 Type 20 (대조군): 14,500,000원
@@ -100,6 +143,8 @@ Type 20이 더 높을 확률: 99.8%
 1. **전환율 트레이드오프**: Type 21은 전환율이 낮지만 ARPPU가 높음
 2. **총 매출**: Type 20이 통계적으로 유의미하게 높은 매출 생성
 3. **재구매 패턴**: 재구매율 50% 가정 시 6개월간의 누적 효과 분석
+4. **상품 구성**: Type 20의 AI 추천권이 추가 매출 창출에 기여
+5. **멤버십 선호도**: Type 21은 한달 멤버십 비중이 높아 ARPPU 상승
 
 ## 📁 데이터 스키마
 
@@ -131,7 +176,7 @@ Type 20이 더 높을 확률: 99.8%
 |------|------|------|
 | created | datetime | 결제 시간 |
 | user_id | string | 사용자 ID |
-| order_name | string | 상품명 |
+| order_name | string | 상품명 (ai 추천권/일주일 멤버십/한달 멤버십) |
 | amount | int | 결제 금액 |
 | cancel | int | 취소 여부 (0/1) |
 
@@ -155,6 +200,19 @@ MEMBERSHIP_DIST_TYPE21 = {
 # 재구매율
 REPURCHASE_RATE = 0.50
 ```
+
+## ✅ 데이터 검증
+
+`check.py` 스크립트를 사용하여 생성된 CSV 데이터의 무결성을 확인할 수 있습니다:
+```bash
+python check.py
+```
+
+검증 항목:
+- Type별 총 유저 수 및 결제 유저 수
+- CVR, ARPU, ARPPU 계산 검증
+- 주문 타입별 분포 확인
+- 총 매출 및 주문 건수 확인
 
 ## 👤 작성자
 
