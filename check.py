@@ -64,3 +64,5 @@ for type_val in [20, 21]:
     type_orders = order_dist[order_dist['type'] == type_val]
     for _, row in type_orders.iterrows():
         print(f"  {row['order_name']}: {row['count']}건")
+
+        
