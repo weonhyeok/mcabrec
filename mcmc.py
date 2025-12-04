@@ -38,106 +38,156 @@ REPURCHASE_RATE_TYPE21 = 0.4
 ANSWER_RATES_EARLY = [0.99, 0.98, 0.95, 0.85, 0.83]
 ANSWER_RATES_LATE = [0.99, 0.98, 0.95, 0.90, 0.88]
 
+# =======================================================
+#                    GLOBAL ID COUNTERS
+# =======================================================
+USER_GLOBAL_ID = 1
+ABTEST_GLOBAL_ID = 1
+ANSWER_GLOBAL_ID = 1
+PAYMENT_GLOBAL_ID = 1
+
 # ===================== FUNCTIONS =====================
 def generate_users(month, n_users_per_month):
+    global USER_GLOBAL_ID
     users = []
     start_date = datetime.strptime(f"{month}-01", "%Y-%m-%d")
     end_date = (start_date + timedelta(days=32)).replace(day=1) - timedelta(days=1)
+
     for i in range(n_users_per_month):
         random_day = random.randint(0, (end_date - start_date).days)
         timestamp = start_date + timedelta(days=random_day,
-                                           hours=random.randint(0,23),
-                                           minutes=random.randint(0,59))
+                                           hours=random.randint(0, 23),
+                                           minutes=random.randint(0, 59))
         gender = 'M' if random.random() < MALE_RATIO else 'F'
-        birth = int(np.random.normal(MALE_BIRTH_MEAN if gender=='M' else FEMALE_BIRTH_MEAN,
-                                     MALE_BIRTH_STD if gender=='M' else FEMALE_BIRTH_STD))
+        birth = int(np.random.normal(
+            MALE_BIRTH_MEAN if gender == 'M' else FEMALE_BIRTH_MEAN,
+            MALE_BIRTH_STD if gender == 'M' else FEMALE_BIRTH_STD
+        ))
+
         users.append({
+            'id': USER_GLOBAL_ID,   # numeric primary key
             'timestamp': timestamp,
-            'user_id': f"{month}_user_{i+1}",
+            'user_id': USER_GLOBAL_ID,
             'gender': gender,
             'birth': birth,
             'signup_month': month
         })
+        USER_GLOBAL_ID += 1
+
     return users
 
+
 def generate_ab_tests(users_df):
+    global ABTEST_GLOBAL_ID
     ab_tests = []
+
     for _, user in users_df.iterrows():
         if user['signup_month'] == '2025-06':
             ab_type = 20 if random.random() < 0.5 else 21
             ab_tests.append({
+                'id': ABTEST_GLOBAL_ID,
                 'timestamp': user['timestamp'],
                 'user_id': user['user_id'],
                 'type': ab_type
             })
+            ABTEST_GLOBAL_ID += 1
+
     return ab_tests
 
+
 def generate_answers(users_df):
+    global ANSWER_GLOBAL_ID
     answers = []
+
     for _, user in users_df.iterrows():
         rates = ANSWER_RATES_EARLY if user['signup_month'] in EARLY_MONTHS else ANSWER_RATES_LATE
-        for answer_id in range(1,6):
-            # 랜덤 노이즈 적용
-            rate = max(0, min(1, np.random.normal(rates[answer_id-1], 0.05)))
+
+        for answer_idx in range(1, 6):
+            rate = max(0, min(1, np.random.normal(rates[answer_idx - 1], 0.05)))
+
             if random.random() < rate:
-                created = user['timestamp'] + timedelta(hours=random.randint(0,24))
+                created = user['timestamp'] + timedelta(hours=random.randint(0, 24))
                 answers.append({
+                    'id': ANSWER_GLOBAL_ID,
                     'created': created,
-                    'answer_id': answer_id,
+                    'answer_id': answer_idx,
                     'user_id': user['user_id'],
-                    'answer': random.choice([1,2])
+                    'answer': random.choice([1, 2])
                 })
+                ANSWER_GLOBAL_ID += 1
+
     return answers
 
+
 def generate_payments(users_df, ab_tests_df):
+    global PAYMENT_GLOBAL_ID
     payments = []
+
     user_hist = {}
     ab_map = dict(zip(ab_tests_df['user_id'], ab_tests_df['type']))
+
     for _, user in users_df.iterrows():
         user_id = user['user_id']
         signup_idx = MONTHS.index(user['signup_month'])
         ab_type = ab_map[user_id] if user_id in ab_map else 20
-        rep_rate = REPURCHASE_RATE_TYPE20 if ab_type==20 else REPURCHASE_RATE_TYPE21
+        rep_rate = REPURCHASE_RATE_TYPE20 if ab_type == 20 else REPURCHASE_RATE_TYPE21
+
         for m_idx in range(signup_idx, len(MONTHS)):
             month = MONTHS[m_idx]
+
             if m_idx == signup_idx:
-                conv_rate = CONVERSION_RATE_TYPE20 if ab_type==20 else CONVERSION_RATE_TYPE21
+                conv_rate = CONVERSION_RATE_TYPE20 if ab_type == 20 else CONVERSION_RATE_TYPE21
                 will_purchase = random.random() < conv_rate
             else:
-                will_purchase = user_id in user_hist and (m_idx-1) in user_hist[user_id] and random.random() < rep_rate
+                will_purchase = user_id in user_hist and (m_idx - 1) in user_hist[user_id] and random.random() < rep_rate
+
             if will_purchase:
                 user_hist.setdefault(user_id, []).append(m_idx)
-                membership = 'weekly' if random.random() < (MEMBERSHIP_DIST_TYPE20['weekly'] if ab_type==20 else MEMBERSHIP_DIST_TYPE21['weekly']) else 'monthly'
-                order_name = '일주일 멤버십' if membership=='weekly' else '한달 멤버십'
+
+                membership = 'weekly' if random.random() < (
+                    MEMBERSHIP_DIST_TYPE20['weekly'] if ab_type == 20 else MEMBERSHIP_DIST_TYPE21['weekly']) else 'monthly'
+
+                order_name = '일주일 멤버십' if membership == 'weekly' else '한달 멤버십'
+
                 start = datetime.strptime(f"{month}-01", "%Y-%m-%d")
                 end = (start + timedelta(days=32)).replace(day=1) - timedelta(days=1)
-                random_day = random.randint(0, (end-start).days)
+
+                random_day = random.randint(0, (end - start).days)
                 created = start + timedelta(days=random_day,
-                                            hours=random.randint(0,23),
-                                            minutes=random.randint(0,59))
+                                            hours=random.randint(0, 23),
+                                            minutes=random.randint(0, 59))
+
                 payments.append({
+                    'id': PAYMENT_GLOBAL_ID,
                     'created': created,
                     'user_id': user_id,
                     'order_name': order_name,
                     'amount': PRICES[order_name],
                     'cancel': 0
                 })
-                if ab_type==20 and membership=='weekly' and random.random() < AI_TICKET_RATE:
+                PAYMENT_GLOBAL_ID += 1
+
+                # AI 추천권 추가 (타입20 + weekly)
+                if ab_type == 20 and membership == 'weekly' and random.random() < AI_TICKET_RATE:
                     payments.append({
-                        'created': created + timedelta(seconds=random.randint(1,300)),
+                        'id': PAYMENT_GLOBAL_ID,
+                        'created': created + timedelta(seconds=random.randint(1, 300)),
                         'user_id': user_id,
                         'order_name': 'ai 추천권',
                         'amount': PRICES['ai 추천권'],
                         'cancel': 0
                     })
+                    PAYMENT_GLOBAL_ID += 1
+
     return payments
+
 
 # ===================== RUN SIMULATION =====================
 all_users = []
 for idx, m in enumerate(MONTHS):
     all_users.extend(generate_users(m, USERS_PER_MONTH[idx]))
-users_df = pd.DataFrame(all_users)
 
+users_df = pd.DataFrame(all_users)
 ab_tests_df = pd.DataFrame(generate_ab_tests(users_df))
 answers_df = pd.DataFrame(generate_answers(users_df))
 payments_df = pd.DataFrame(generate_payments(users_df, ab_tests_df))
@@ -148,6 +198,7 @@ users_df.to_csv('dataSave/users.csv', index=False, encoding='utf-8-sig')
 ab_tests_df.to_csv('dataSave/ab_tests.csv', index=False, encoding='utf-8-sig')
 answers_df.to_csv('dataSave/answers.csv', index=False, encoding='utf-8-sig')
 payments_df.to_csv('dataSave/payments.csv', index=False, encoding='utf-8-sig')
+
 
 # ===================== PER-USER METRICS =====================
 user_metrics = users_df.merge(ab_tests_df[['user_id','type']], on='user_id', how='left')
