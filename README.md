@@ -92,8 +92,9 @@ AI_TICKET_RATE = 0.75
 # 재구매율
 REPURCHASE_RATE_TYPE20 = 0.50
 REPURCHASE_RATE_TYPE21 = 0.40
+```
 
-### 👥 사용자 생성 규칙
+👥 사용자 생성 규칙
 
 전체 사용자: 1,700명
 
@@ -118,12 +119,13 @@ REPURCHASE_RATE_TYPE21 = 0.40
 📁 출력되는 데이터
 
 mcmc.py 실행 시 생성되는 파일 구조:
-
+```
 dataSave/
 ├── users.csv
 ├── ab_tests.csv
 ├── answers.csv
 └── payments.csv
+```
 
 🧪 실행 방법
 1) 라이브러리 설치
@@ -134,6 +136,7 @@ python mcmc.py
 
 📈 실행 결과 예시 (2025-12-04 기준)
 1️⃣ CVR EDA 결과
+
       conversions  non_conversions  total       cvr
 type
 20.0         89.0            208.0    297  0.299663
