@@ -94,31 +94,27 @@ REPURCHASE_RATE_TYPE20 = 0.50
 REPURCHASE_RATE_TYPE21 = 0.40
 ```
 
-👥 사용자 생성 규칙
+## 👥 사용자 생성 규칙
 
-전체 사용자: 1,700명
+- **전체 사용자:** 1,700명  
+- **월별 구성**
+  - 5월: 300명  
+  - 6월: 600명 (A/B 대상)  
+  - 7~10월: 각 200명  
+- **성별 비율**
+  - 남성: 66.7%  
+  - 여성: 33.3%  
+- **출생년도 분포**
+  - 남성 평균: 1995년  
+  - 여성 평균: 1998년  
 
-월별 구성
+---
 
-5월: 300명
+## 📁 출력되는 데이터
 
-6월: 600명 (A/B 대상)
+`mcmc.py` 실행 시 생성되는 파일 구조:
 
-7~10월: 각 200명
 
-성별:
-
-남성 66.7%, 여성 33.3%
-
-출생년도:
-
-남성 평균 1995년
-
-여성 평균 1998년
-
-📁 출력되는 데이터
-
-mcmc.py 실행 시 생성되는 파일 구조:
 ```
 dataSave/
 ├── users.csv
@@ -127,33 +123,40 @@ dataSave/
 └── payments.csv
 ```
 
-🧪 실행 방법
-1) 라이브러리 설치
-pip install pandas numpy matplotlib scipy statsmodels
+---
 
+## 🧪 실행 방법
+
+### 1) 라이브러리 설치
+```bash
+pip install pandas numpy matplotlib scipy statsmodels
+```
 2) 실행
+```bash
 python mcmc.py
+```
 
 📈 실행 결과 예시 (2025-12-04 기준)
 1️⃣ CVR EDA 결과
 
+```bash
       conversions  non_conversions  total       cvr
 type
 20.0         89.0            208.0    297  0.299663
 21.0         65.0            238.0    303  0.214521
-
+```
 
 Type 20 CVR ≈ 30%
-
 Type 21 CVR ≈ 21%
 
 2️⃣ LPM (선형확률모형)
 
-converted ~ C(type)
+`converted ~ C(type)`
 
+```scss
 Intercept                 0.2997
 C(type)[T.21.0]          -0.0851   (p = 0.017)
-
+```
 
 Type 21은 Type 20 대비 CVR이 약 8.5%p 감소
 
@@ -161,30 +164,33 @@ Type 21은 Type 20 대비 CVR이 약 8.5%p 감소
 
 3️⃣ ARPU 회귀 (전체 유저 기준)
 
-arpu ~ C(type)
+`arpu ~ C(type)`
 
+```scss
 Intercept              32,490원
 C(type)[T.21.0]       -3,185원   (p = 0.566)
-
+```
 
 ARPU 차이는 유의하지 않음
 
 4️⃣ ARPPU 회귀 (결제 유저 기준)
 
-arppu ~ C(type)
+`arppu ~ C(type)`
 
+```scss
 Intercept              108,400원
 C(type)[T.21.0]        28,190원   (p = 0.041)
-
+```
 
 Type 21의 결제 고객이 1인당 약 2.8만 원 더 지출
 
 통계적으로 유의 (p < 0.05)
 
 5️⃣ Before/After 설문 응답률
+```nginx
 before_response_rate   0.83~0.99
 after_response_rate    0.88~0.98
-
+```
 
 전반적으로 후기 그룹(8~10월)의 응답률이 더 높음.
 
